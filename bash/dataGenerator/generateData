@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+
+
+###########################################################################
+# Customization
+###########################################################################
+
+# Number of lines to append
+lines=3000;
+# Number of seconds to sleep between each append action
+seconds=0.4;
+# Indicates if data files should be flushed before generating data
+# (1: do flush, any other value: do not flush)
+doFlush=1;
+# Indicates if writing to files should happend queued or in parallel.
+# Queued writing means: one file write blocks any other file write
+# resulting in a queue of file writing actions which corresponds to the
+# in which the files have been handed over to the script order.
+# (1: queued writing, any other value: non-queued writing)
+queuedWriting=1;
+
+
+###########################################################################
+# Data Generation
+###########################################################################
+
+# Initially flush every file
+if [ $doFlush -eq 1 ];
+then
+    for file in "$@";
+    do
+        printf '' > "$file";
+    done
+fi
+
+
+
+counter=0;
+
+# Write data to each file continously
+while true;
+do
+
+    if [ $counter -lt $lines ];
+    then
+        counter=$(( $counter + 1 ));
+    else
+        counter=0;
+    fi
+
+    for file in "$@";
+    do
+        if [ $counter -ne 0 ];
+        then
+            printf 'New data: %s\n' $counter >> "$file"
+        else
+            printf '' > "$file"
+        fi
+
+        # Do queued writing
+        if [ $queuedWriting -eq 1 ];
+        then
+            sleep $seconds;
+        fi
+
+    done;
+
+    # Do non-queued writing
+    if [ $queuedWriting -ne 1 ];
+    then
+        sleep $seconds;
+    fi
+
+done
+
